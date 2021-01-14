@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from RLTest import __version__
+from RLTest._version import __version__
 
 
 setup(
