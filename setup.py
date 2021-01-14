@@ -15,6 +15,12 @@ setup(
         'psutil',
         'distro>=1.4.0'
     ],
+    setup_requires=[
+         'redis>=3.0.0',
+         'redis-py-cluster>=2.1.0',
+         'psutil',
+         'distro>=1.4.0'
+    ],
     entry_points='''
         [console_scripts]
         RLTest=RLTest.__main__:main
