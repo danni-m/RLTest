@@ -9,7 +9,7 @@ setup(
     author='RedisLabs',
     author_email='oss@redislabs.com',
     packages=find_packages(),
-    install_requires=[
+    requires=[
         'redis>=3.0.0',
         'redis-py-cluster>=2.1.0',
         'psutil',
