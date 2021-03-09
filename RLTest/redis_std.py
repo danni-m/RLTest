@@ -17,7 +17,7 @@ SLAVE = 'slave'
 
 
 class StandardEnv(object):
-    def __init__(self, redisBinaryPath, port=6379, modulePath=None, moduleArgs=None, outputFilesFormat=None,
+    def __init__(self, redisBinaryPath, port=6379, modulePath=None, moduleArgs=None, extraModulePath=None, extraModuleArgs=None, outputFilesFormat=None,
                  dbDirPath=None, useSlaves=False, serverId=1, password=None, libPath=None, clusterEnabled=False, decodeResponses=False,
                  useAof=False, debugger=None, noCatch=False, unix=False, verbose=False, useTLS=False, tlsCertFile=None,
                  tlsKeyFile=None, tlsCaCertFile=None):
@@ -26,6 +26,8 @@ class StandardEnv(object):
             '~/') else redisBinaryPath
         self.modulePath = os.path.abspath(modulePath) if modulePath else None
         self.moduleArgs = moduleArgs
+        self.extraModulePath = os.path.abspath(extraModulePath) if extraModulePath else None
+        self.extraModuleArgs = extraModuleArgs
         self.outputFilesFormat = self.uuid + '.' + outputFilesFormat
         self.useSlaves = useSlaves
         self.masterServerId = serverId
@@ -151,6 +153,10 @@ class StandardEnv(object):
             cmdArgs += ['--loadmodule', self.modulePath]
             if self.moduleArgs:
                 cmdArgs += self.moduleArgs.split(' ')
+        if self.extraModulePath:
+            cmdArgs += ['--loadmodule', self.extraModulePath]
+            if self.extraModuleArgs:
+                cmdArgs += self.extraModuleArgs.split(' ')
         if self.dbDirPath is not None:
             cmdArgs += ['--dir', self.dbDirPath]
         if self.outputFilesFormat is not None and not self.noCatch:

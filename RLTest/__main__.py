@@ -270,6 +270,14 @@ parser.add_argument(
 parser.add_argument(
     '--tls-ca-cert-file', default=None, help='/path/to/ca.crt')
 
+parser.add_argument(
+    '--extra-module', default=None,
+    help='path to an additional module file')
+
+parser.add_argument(
+    '--extra-module-args', default=None,
+    help='arguments to give to the additional module on loading', action='append')
+
 class EnvScopeGuard:
     def __init__(self, runner):
         self.runner = runner
@@ -354,8 +362,11 @@ class RLTest:
             # when running on existing env we always reuse it
             self.args.env_reuse = True
         Defaults.module = self.args.module
-
         Defaults.module_args = (' '.join(self.args.module_args) if self.args.module_args else None)
+
+        Defaults.extra_module = self.args.extra_module
+        Defaults.extra_module_args = (' '.join(self.args.extra_module_args) if self.args.extra_module_args else None)
+
         Defaults.env = self.args.env
         Defaults.binary = self.args.oss_redis_path
         Defaults.verbose = self.args.verbose

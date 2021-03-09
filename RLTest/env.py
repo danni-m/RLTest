@@ -1,18 +1,18 @@
 # coding=utf-8
 from __future__ import print_function
-import os
-import sys
-import redis
-import unittest
-import inspect
+
 import contextlib
+import inspect
+import os
+import unittest
 import warnings
-from .redis_std import StandardEnv
-from .redis_cluster import ClusterEnv
-from .utils import Colors, expandBinary
+
 from .Enterprise import EnterpriseClusterEnv
 from .exists_redis import ExistsRedisEnv
+from .redis_cluster import ClusterEnv
 from .redis_enterprise_cluster import EnterpriseRedisClusterEnv
+from .redis_std import StandardEnv
+from .utils import Colors, expandBinary
 
 
 class TestAssertionFailure(Exception):
@@ -101,6 +101,9 @@ class Defaults:
     module = None
     module_args = None
 
+    extra_module = None
+    extra_module_args = None
+
     env = 'oss'
     binary = 'redis-server'
     proxy_binary = None
@@ -130,6 +133,8 @@ class Defaults:
         kwargs = {
             'modulePath': self.module,
             'moduleArgs': self.module_args,
+            'extraModulePath': self.extra_module,
+            'extraModuleArgs': self.extra_module_args,
             'useSlaves': self.use_slaves,
             'useAof': self.use_aof,
             'dbDirPath': self.logdir,
@@ -147,7 +152,7 @@ class Defaults:
 
 class Env:
     RTestInstance = None
-    EnvCompareParams = ['module', 'moduleArgs', 'env', 'useSlaves', 'shardsCount', 'useAof', 'forceTcp']
+    EnvCompareParams = ['module', 'moduleArgs', 'extraModule', 'extraModuleArgs', 'env', 'useSlaves', 'shardsCount', 'useAof', 'forceTcp']
 
     def compareEnvs(self, env):
         if env is None:
@@ -157,9 +162,24 @@ class Env:
                 return False
         return True
 
+    @staticmethod
+    def _build_module_args(module_args, default_args):
+        if not module_args:
+            return default_args or ''
+        else:
+            default_args_strings = default_args.split(' ') if default_args else ''
+            retArgs = module_args
+            for i in range(0, len(default_args_strings) - 1, 2):
+                # join module args
+                if default_args_strings[i] not in default_args_strings:
+                    retArgs += ' %s %s' % (default_args_strings[i], default_args_strings[i + 1])
+            return retArgs
+
     def __init__(self, testName=None, testDescription=None, module=None,
-                 moduleArgs=None, env=None, useSlaves=None, shardsCount=None, decodeResponses=None,
-                 useAof=None, forceTcp=False, useTLS=False, tlsCertFile=None, tlsKeyFile=None, tlsCaCertFile=None, logDir=None, redisBinaryPath=None,dmcBinaryPath=None,redisEnterpriseBinaryPath=None ):
+                 moduleArgs=None, env=None, extraModule=None, extraModuleArgs=None, useSlaves=None, shardsCount=None,
+                 decodeResponses=None,
+                 useAof=None, forceTcp=False, useTLS=False, tlsCertFile=None, tlsKeyFile=None, tlsCaCertFile=None,
+                 logDir=None, redisBinaryPath=None, dmcBinaryPath=None, redisEnterpriseBinaryPath=None):
 
         self.testName = testName if testName else '%s.%s' % (inspect.getmodule(inspect.currentframe().f_back).__name__, inspect.currentframe().f_back.f_code.co_name)
         self.testName = self.testName.replace(' ', '_')
@@ -168,7 +188,10 @@ class Env:
             print(Colors.Gray('\tdescription: ' + testDescription))
 
         self.module = module if module else Defaults.module
-        self.moduleArgs = None
+        self.moduleArgs = self._build_module_args(moduleArgs, Defaults.module_args)
+        self.extraModule = extraModule if extraModule else Defaults.extra_module
+        self.extraModuleArgs = self._build_module_args(extraModuleArgs, Defaults.extra_module_args)
+        # TODO
         if moduleArgs:
             self.moduleArgs = moduleArgs
         if Defaults.module_args:
@@ -280,6 +303,8 @@ class Env:
         kwargs = {
             'modulePath': self.module,
             'moduleArgs': self.moduleArgs,
+            'extraModulePath': self.extraModule,
+            'extraModuleArgs': self.extraModuleArgs,
             'useSlaves': self.useSlaves,
             'decodeResponses': self.decodeResponses,
             'useAof': self.useAof,
@@ -306,6 +331,14 @@ class Env:
 
     def getConnection(self, shardId=1):
         return self.envRunner.getConnection(shardId)
+
+    def getClusterConnectionIfNeeded(self):
+        if isinstance(self.envRunner, ClusterEnv):
+            return self.envRunner.getClusterConnection()
+        elif isinstance(self.envRunner, EnterpriseRedisClusterEnv):
+            return self.envRunner.getClusterConnection()
+        else:
+            return self.getConnection()
 
     def getSlaveConnection(self):
         return self.envRunner.getSlaveConnection()
